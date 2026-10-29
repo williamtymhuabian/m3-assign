@@ -1,0 +1,8 @@
+numpy>=1.24
+scipy>=1.10
+torch>=2.0
+safetensors>=0.4
+Pillow>=10.0
+
+# 可选：只在复算测地距离 / habitat 冒烟测试时需要
+# habitat-sim==0.1.7

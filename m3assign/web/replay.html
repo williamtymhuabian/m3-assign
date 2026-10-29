@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>回放台 · HM3D-M3 多智能体分配</title>
+<link rel="stylesheet" href="/web/board.css">
+<style>
+main{grid-template-columns:270px minmax(520px,1fr) 340px}
+#bev{width:100%;max-width:760px;aspect-ratio:1;background:#080d12}
+.tl{display:flex;align-items:center;gap:8px;margin-top:8px}
+#strip{display:flex;gap:3px;overflow-x:auto;margin-top:8px;padding-bottom:4px}
+#strip canvas{width:52px;height:52px;border:1px solid var(--line);border-radius:5px;cursor:pointer;opacity:.55;display:block}
+#strip canvas.on{opacity:1;border-color:var(--acc)}
+#time{width:100%;height:34px;border-radius:6px;background:#0f1620;border:1px solid var(--line);display:block}
+.bar{height:5px;border-radius:3px;background:#1b2735;overflow:hidden;margin-top:3px}
+.bar i{display:block;height:100%;background:var(--acc)}
+#dec .conf{color:var(--dim)}
+h2 .note{text-transform:none;letter-spacing:0}
+.grp{margin:10px 0 4px;font-size:11px;color:var(--dim);display:flex;align-items:center;gap:6px}
+#srcs{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.src{background:#0f1620;border:1px solid var(--line);border-radius:7px;padding:4px;font-size:10px;color:var(--dim)}
+.src canvas,.src img{width:100%;aspect-ratio:1;object-fit:cover;image-rendering:pixelated;border-radius:4px;display:block;background:#080d12}
+.src b{display:block;color:#cfe0ee;font-weight:600;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.src.pick{cursor:pointer}
+.src.pick:hover{border-color:var(--acc)}
+.src.on{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc) inset}
+.src em{font-style:normal;color:#64748b}
+</style>
+</head>
+<body>
+<header>
+  <h1>回放台</h1>
+  <nav><a href="/">训练总览</a><a class="on" href="/replay">回放台</a></nav>
+  <span class="badge live" id="trainBadge">连接中…</span>
+  <span class="badge" id="ckBadge">ckpt -</span>
+  <span class="badge" id="epBadge">未选择 episode</span>
+  <span class="badge" id="clock"></span>
+</header>
+<main>
+  <section>
+    <div class="card">
+      <h2>Episode</h2>
+      <div class="row"><input type="search" id="q" placeholder="搜索 episode / 场景"><button id="reload">刷新</button></div>
+      <div id="epList" class="note">载入中…</div>
+    </div>
+    <div class="card">
+      <h2>图层</h2>
+      <div class="row" style="flex-wrap:wrap;gap:6px">
+        <button id="btnHeat" class="on">热图</button>
+        <button id="btnPred" class="on">模型分配</button>
+        <button id="btnTeach" class="on">teacher 分配</button>
+        <button id="btnTrail" class="on">轨迹</button>
+        <button id="btnLabel" class="on">标签</button>
+        <button id="btnSmooth" class="on">连续插值</button>
+      </div>
+      <div class="note" style="margin-top:8px">空格=播放/暂停 · ←→=逐帧 · []=变速 · 点缩略图跳转</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h2 style="margin:0">BEV 回放 <span class="note" id="frameInfo">-</span></h2>
+        <div class="row">
+          <button id="btnBack">⟲</button>
+          <button id="btnPrev">◀</button>
+          <button id="btnPlay">▶ 播放</button>
+          <button id="btnNext">▶</button>
+          <select id="speed"><option value="0.6">很慢</option><option value="1.2">慢</option><option value="2.2" selected>中</option><option value="4">快</option><option value="8">很快</option></select>
+        </div>
+      </div>
+      <canvas id="bev" width="760" height="760"></canvas>
+      <canvas id="time" width="760" height="34"></canvas>
+      <div id="strip"></div>
+      <div class="legend">
+        <span><i class="dot" style="background:#7f1d1d"></i>障碍</span>
+        <span><i class="dot" style="background:#155e75"></i>已探索</span>
+        <span><i class="dot" style="background:#22d3ee"></i>agent</span>
+        <span><i class="dot" style="background:#ef4444"></i>目标峰值</span>
+        <span class="note">实线=teacher · 虚线=AssignNet · 时间轴绿=该帧与 teacher 一致</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h2 style="margin:0">三种图源 <span class="note" id="srcInfo">数据集里就这三类图像，全部来自真实张量/官方渲染</span></h2>
+        <span class="note" id="srcFrame">-</span>
+      </div>
+      <div class="grp">① geo · 场景栅格（真实 HM3D 几何池化，非照片）</div>
+      <div id="srcsGeo"></div>
+      <div class="grp">② heat · CLIP ViT-B/32 目标相似度（模型输出）· 点击切换 BEV 叠加</div>
+      <div id="srcsHeat"></div>
+      <div class="grp">③ IIN · 目标实物图（Stretch 相机在 HM3D 场景内渲染）</div>
+      <div id="srcsIin"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="card">
+      <h2>本帧决策 <span class="note" id="decSum"></span></h2>
+      <table id="decTable"><tr><td class="note">未选择 episode</td></tr></table>
+    </div>
+    <div class="card">
+      <h2>逐帧一致率</h2>
+      <div id="agreeList" class="note">-</div>
+    </div>
+    <div class="card">
+      <h2>指令与目标状态</h2>
+      <div id="goals" class="note">未选择 episode</div>
+    </div>
+  </section>
+</main>
+<div id="toast"></div>
+<script src="/web/replay.js"></script>
+</body>
+</html>

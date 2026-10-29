@@ -1,0 +1,710 @@
+<div class="cr-app">
+<style>
+.cr-app{--bg:#0d1117;--panel:#161b22;--line:#30363d;--txt:#c9d1d9;--dim:#8b949e;--ok:#3fb950;--bad:#f85149;--warn:#d29922;--acc:#58a6ff;
+  background:var(--bg);color:var(--txt);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;border:1px solid var(--line);border-radius:12px;overflow:hidden;max-width:1120px}
+.cr-app *{box-sizing:border-box}
+.cr-head{display:flex;align-items:baseline;gap:14px;padding:14px 18px;border-bottom:1px solid var(--line);background:#11161d;flex-wrap:wrap}
+.cr-title{font-size:15px;font-weight:700;letter-spacing:.4px}
+.cr-sub{font-size:12px;color:var(--dim)}
+.cr-chips{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+.cr-tools{display:flex;gap:6px;flex-wrap:wrap}
+.cr-tool{font-size:11px;padding:4px 9px;border:1px solid var(--line);border-radius:6px;cursor:pointer;color:var(--txt);background:#0f141a;white-space:nowrap}
+.cr-tool:hover{border-color:var(--acc)}
+.cr-chip{font-size:11px;padding:4px 9px;border:1px solid var(--line);border-radius:999px;cursor:pointer;color:var(--dim);background:#0f141a}
+.cr-chip.on{border-color:var(--acc);color:#dbeafe;background:#0d2137}
+.cr-body{display:flex;gap:0;align-items:stretch;flex-wrap:wrap;max-width:100%}
+.cr-mapwrap{position:relative;padding:14px;background:#0a0e13;flex:0 1 auto;max-width:100%}
+#cr-map{width:500px;max-width:100%;height:auto;aspect-ratio:1;display:block;border-radius:8px;background:#000;border:1px solid #222a33}
+.cr-hud{position:absolute;left:22px;top:22px;font-size:11px;color:#9fb3c8;background:#0a0f16cc;border:1px solid #22303d;border-radius:6px;padding:6px 9px;line-height:1.5;pointer-events:none}
+.cr-hud b{color:#e6edf3}
+.cr-side{flex:1 1 380px;min-width:340px;border-left:1px solid var(--line);display:flex;flex-direction:column}
+.cr-ev{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cr-nav{display:flex;gap:6px}
+.cr-btn{width:32px;height:30px;display:grid;place-items:center;border:1px solid var(--line);border-radius:6px;background:#0f141a;color:var(--txt);cursor:pointer;font-size:13px;user-select:none}
+.cr-btn:hover{border-color:var(--acc)}
+.cr-btn.play{width:auto;padding:0 12px;color:#dbeafe;border-color:#1f4a76;background:#0d2137}
+.cr-evmeta{font-size:12px;color:var(--dim)}
+.cr-evmeta b{color:var(--txt)}
+.cr-tabs{display:flex;gap:6px;padding:12px 16px 4px;flex-wrap:wrap}
+.cr-tab{font-size:11.5px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;cursor:pointer;color:var(--dim);background:#0f141a}
+.cr-tab.on{border-color:var(--acc);color:#e6f0ff;background:#0d2137}
+.cr-lamrow{display:flex;align-items:center;gap:9px;padding:6px 16px 10px;font-size:11px;color:var(--dim);flex-wrap:wrap}
+.cr-lamrow input[type=range]{flex:1 1 140px;min-width:120px;accent-color:#58a6ff;height:4px}
+.cr-lamrow b{color:#e6edf3;font-size:12px;min-width:44px}
+.cr-lamrow .cr-lamnote{flex:1 1 100%;color:#6e7681;font-size:10.5px;line-height:1.5}
+.cr-legend{font-size:10.5px;color:var(--dim);padding:2px 16px 10px;line-height:1.6}
+.cr-rows{padding:6px 10px 10px;overflow:auto;flex:1}
+.cr-row{display:grid;grid-template-columns:18px 46px 1fr 74px;gap:8px;align-items:center;padding:8px 6px;border-bottom:1px dashed #21262d}
+.cr-dot{width:12px;height:12px;border-radius:50%;box-shadow:0 0 0 2px #0006}
+.cr-a{font-size:12px;color:var(--dim)}
+.cr-move{font-size:12.5px}
+.cr-move .old{color:var(--dim);text-decoration:line-through}
+.cr-move .new{color:#e6edf3;font-weight:700}
+.cr-badge{font-size:10px;padding:2px 6px;border-radius:999px;border:1px solid;text-align:center;white-space:nowrap}
+.badge-corr{color:#3fb950;border-color:#2ea04366;background:#3fb9501a}
+.badge-harm{color:#f85149;border-color:#f8514966;background:#f851491a}
+.badge-keep{color:#8b949e;border-color:#30363d;background:#8b949e14}
+.badge-force{color:#d29922;border-color:#d2992266;background:#d299221a}
+.badge-neutral{color:#58a6ff;border-color:#58a6ff55;background:#58a6ff14}
+.cr-gap{margin:2px 0 6px 72px;font-size:10.5px;color:var(--dim);display:flex;align-items:center;gap:6px}
+.cr-gapbar{position:relative;height:6px;background:#1b232d;border-radius:3px;flex:0 0 150px;overflow:hidden}
+.cr-gapfill{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:#58a6ff}
+.cr-lam{position:absolute;top:-2px;bottom:-2px;width:2px;background:#d29922}
+.cr-tot{padding:10px 16px;border-top:1px solid var(--line);font-size:11.5px;color:var(--dim);display:flex;gap:14px;flex-wrap:wrap}
+.cr-tot b{color:#e6edf3}
+.cr-tl{display:flex;align-items:flex-end;gap:3px;padding:10px 14px 12px;border-top:1px solid var(--line);background:#0f141a;overflow-x:auto}
+.cr-tick{flex:0 0 16px;height:44px;display:flex;flex-direction:column-reverse;gap:1px;cursor:pointer;border-radius:3px;padding:1px;border:1px solid transparent}
+.cr-tick.on{border-color:var(--acc);background:#0d2137}
+.cr-tick i{display:block;width:100%;border-radius:1px}
+.cr-tick .k{background:#30363d}
+.cr-tick .c{background:#3fb950}
+.cr-tick .h{background:#f85149}
+.cr-tick .f{background:#d29922}
+.cr-foot{font-size:10.5px;color:#6e7681;padding:0 16px 12px}
+.cr-sum{font-size:11px;color:#8b949e;padding:9px 16px;border-top:1px solid var(--line);background:#0d1219;display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.cr-sum b{color:#e6edf3}
+.cr-sum .sep{color:#30363d}
+.cr-hint{font-size:11px;color:#8b949e;padding:8px 18px;border-bottom:1px solid var(--line);background:#0f141a}
+@media (max-width:980px){
+  .cr-mapwrap{width:100%;max-width:100%;padding:10px}
+  #cr-map{width:100%;height:auto;aspect-ratio:1}
+  .cr-side{border-left:none;border-top:1px solid var(--line);flex:1 1 100%;min-width:0}
+  #cr-rows{max-height:none}
+}
+</style>
+
+<div class="cr-head">
+  <div class="cr-title">承诺回放 · HM3D-M3 验证集</div>
+  <div class="cr-sub" id="cr-ckpt"></div>
+  <div class="cr-tools">
+    <div class="cr-tool" id="cr-copy" title="复制当前帧的分享链接">⧉ 复制链接</div>
+    <div class="cr-tool" id="cr-png" title="把当前帧存成 PNG">⤓ 当前帧 PNG</div>
+  </div>
+  <div class="cr-chips" id="cr-eps"></div>
+</div>
+<div class="cr-hint">▶ 连续播放，看承诺随事件变化；拖动 <b>λ</b> 会按同一套解码实时重跑，看切换怎么变少。<b>每帧重解</b> 常为 ±0.005 的打分差来回换目标，<b>新鲜证据 + 余量</b> 只在打分差超过 λ 时才换。快捷键：← → 步进，空格播放，] 下一个切换，\ 下一个有害。</div>
+
+<div class="cr-body">
+  <div class="cr-mapwrap">
+    <canvas id="cr-map" width="1000" height="1000"></canvas>
+    <div class="cr-hud" id="cr-hud"></div>
+  </div>
+  <div class="cr-side">
+    <div class="cr-ev">
+      <div class="cr-nav">
+        <div class="cr-btn" id="cr-first" title="第一帧">⏮</div>
+        <div class="cr-btn" id="cr-prev" title="上一帧">◀</div>
+        <div class="cr-btn play" id="cr-play">▶ 播放</div>
+        <div class="cr-btn" id="cr-next" title="下一帧">▶</div>
+        <div class="cr-btn" id="cr-last" title="最后一帧">⏭</div>
+        <div class="cr-btn" id="cr-jump-sw" title="下一次自由切换（快捷键 ]）">换</div>
+        <div class="cr-btn" id="cr-jump-harm" title="下一次有害切换（快捷键 \\）">害</div>
+      </div>
+      <div class="cr-evmeta" id="cr-evmeta"></div>
+    </div>
+    <div class="cr-tabs" id="cr-tabs"></div>
+    <div class="cr-lamrow">
+      <span>λ</span>
+      <input type="range" id="cr-lam" min="0" max="0.12" step="0.005" value="0.03">
+      <b id="cr-lamval">0.030</b>
+      <span class="cr-lamnote" id="cr-lamnote">拖动即在浏览器里按同一套解码重新滚动<b>新鲜证据 + 余量</b>策略；λ=0 即每帧重解。</span>
+    </div>
+    <div class="cr-legend" id="cr-legend"></div>
+    <div class="cr-rows" id="cr-rows"></div>
+    <div class="cr-tot" id="cr-tot"></div>
+  </div>
+</div>
+
+<div class="cr-sum" id="cr-sum"></div>
+<div class="cr-tl" id="cr-tl"></div>
+<div class="cr-foot" id="cr-foot"></div>
+
+<script>
+const DATA = __DATA__;
+const COLORS = ["#4dd0e1","#ffb74d","#e040fb","#9ccc65"];
+const TYPE = {
+  corr:   {label:"纠正", cls:"badge-corr", key:"c"},
+  harm:   {label:"有害", cls:"badge-harm", key:"h"},
+  keep:   {label:"保持", cls:"badge-keep", key:"k"},
+  forced: {label:"被迫重分", cls:"badge-force", key:"f"},
+  neutral:{label:"中性", cls:"badge-neutral", key:"k"},
+  init:   {label:"初始", cls:"badge-neutral", key:"k"},
+  absent: {label:"缺席", cls:"badge-keep", key:"k"},
+};
+function actOf(r){ return (r.act==="forced" && r.old<0) ? "init" : r.act; }
+const REASON = {start:"起点", periodic:"周期快照", found:"发现目标"};
+const CANVAS = 1000;
+let LAM = DATA.margin;
+const HAS_LOGITS = DATA.episodes.every(e => e.events.every(ev => Array.isArray(ev.logits)));
+const FRESH_KEY = "fresh@" + DATA.margin;
+const VAR_ORDER = ["per_frame", "fresh", "memory@0"];
+const VAR_NAME = {per_frame:"每帧重解", fresh:"新鲜+余量", "memory@0":"旧承诺喂回"};
+
+let ep = 0, ev = 0, variant = "fresh", playing = false, speed = 1;
+let imgs = [], animStart = performance.now(), animDur = 260;
+let lastAdvance = 0;
+let VIEW = {x0:0, y0:0, size:96, ep:-1};
+const cvs = document.getElementById("cr-map");
+const ctx = cvs.getContext("2d");
+
+function computeView(e){
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  e.events.forEach(ev=>{
+    ev.agents.concat(ev.goals).forEach(p=>{
+      x0=Math.min(x0,p[0]); x1=Math.max(x1,p[0]);
+      y0=Math.min(y0,p[1]); y1=Math.max(y1,p[1]);
+    });
+  });
+  let size=Math.min(96, Math.max(20, Math.max(x1-x0, y1-y0) + 10));
+  const cx=(x0+x1)/2, cy=(y0+y1)/2;
+  const vx=Math.max(0, Math.min(96-size, cx-size/2));
+  const vy=Math.max(0, Math.min(96-size, cy-size/2));
+  return {x0:vx, y0:vy, size, ep};
+}
+function S(v){ return (v-VIEW.x0)/VIEW.size*CANVAS; }
+
+// ---- 与 commit_trace.decode 同口径的浏览器端解码（K≤4, M≤5，位集枚举足够） ----
+function decodeJS(logits, vk, vm, M, prev, lam){
+  const actors = [], goals = [];
+  for(let a=0;a<vk.length;a++) if(vk[a]) actors.push(a);
+  for(let j=0;j<M;j++) if(vm[j]) goals.push(j);
+  const assign = new Array(M).fill(-1);
+  const n = actors.length, m = goals.length;
+  if(!n || !m) return assign;
+  const cost = (i,j)=>{
+    let c = -logits[actors[i]][goals[j]];
+    if(!isFinite(c)) c = 1e6;
+    if(lam > 0 && prev[actors[i]] === goals[j]) c -= lam;
+    return c;
+  };
+  if(n <= m){
+    const full = 1<<m;
+    let cur = new Float64Array(full).fill(Infinity); cur[0] = 0;
+    const back = [];
+    for(let i=0;i<n;i++){
+      const nxt = new Float64Array(full).fill(Infinity);
+      const bk = new Int32Array(full).fill(-1);
+      for(let mask=0;mask<full;mask++){
+        if(!isFinite(cur[mask])) continue;
+        for(let j=0;j<m;j++){
+          if(mask & (1<<j)) continue;
+          const nm = mask | (1<<j), v = cur[mask] + cost(i,j);
+          if(v < nxt[nm]){ nxt[nm] = v; bk[nm] = mask; }
+        }
+      }
+      back.push(bk); cur = nxt;
+    }
+    let best = -1, bv = Infinity;
+    for(let mask=0;mask<full;mask++){
+      let bits = 0;
+      for(let x=mask;x;x&=x-1) bits++;
+      if(bits === n && cur[mask] < bv){ bv = cur[mask]; best = mask; }
+    }
+    let mask = best;
+    for(let i=n-1;i>=0;i--){
+      const pm = back[i][mask];
+      let j = 0, d = mask ^ pm;
+      while(!(d & (1<<j))) j++;
+      assign[goals[j]] = actors[i];
+      mask = pm;
+    }
+  } else {
+    const full = 1<<n;
+    let cur = new Float64Array(full).fill(Infinity); cur[0] = 0;
+    const back = [];
+    for(let j=0;j<m;j++){
+      const nxt = new Float64Array(full).fill(Infinity);
+      const bk = new Int32Array(full).fill(-1);
+      for(let mask=0;mask<full;mask++){
+        if(!isFinite(cur[mask])) continue;
+        for(let i=0;i<n;i++){
+          if(mask & (1<<i)) continue;
+          const nm = mask | (1<<i), v = cur[mask] + cost(i,j);
+          if(v < nxt[nm]){ nxt[nm] = v; bk[nm] = mask; }
+        }
+      }
+      back.push(bk); cur = nxt;
+    }
+    let best = -1, bv = Infinity;
+    for(let mask=0;mask<full;mask++){
+      let bits = 0;
+      for(let x=mask;x;x&=x-1) bits++;
+      if(bits === m && cur[mask] < bv){ bv = cur[mask]; best = mask; }
+    }
+    let mask = best;
+    for(let j=m-1;j>=0;j--){
+      const pm = back[j][mask];
+      let i = 0, d = mask ^ pm;
+      while(!(d & (1<<i))) i++;
+      assign[goals[j]] = actors[i];
+      mask = pm;
+    }
+  }
+  return assign;
+}
+
+function joinAgents(assign){
+  const out = new Array(4).fill(-1);
+  for(let g=0; g<assign.length; g++){
+    const a = assign[g];
+    if(a >= 0 && a < out.length && out[a] < 0) out[a] = g;
+  }
+  return out;
+}
+
+// 在一条 episode 上按 λ 重新滚动，得到与 commit_trace 同结构的逐 agent 记录
+function rerollEpisode(epIdx, lam){
+  const ep = DATA.episodes[epIdx];
+  let prev = new Array(4).fill(-1);
+  return ep.events.map(ev=>{
+    const M = ep.M, K = ep.K;
+    const cur = decodeJS(ev.logits, ev.valid_k, ev.valid_m, M, prev, lam);
+    const now = joinAgents(cur);
+    const rows = [];
+    for(let a=0;a<K;a++){
+      const old = prev[a], nw = now[a];
+      const oldValid = old >= 0 && old < M && !!ev.valid_m[old];
+      let act = "keep", gap = 0;
+      if(!ev.valid_k[a]){
+        act = "absent";
+      } else if(old !== nw){
+        if(!oldValid){
+          act = "forced";
+        } else {
+          act = "neutral";
+          if(nw >= 0){
+            const before = ev.oracle[old] === a ? 1 : 0;
+            const after = ev.oracle[nw] === a ? 1 : 0;
+            if(after > before) act = "corr";
+            else if(after < before) act = "harm";
+            gap = ev.logits[a][nw] - ev.logits[a][old];
+          }
+        }
+      } else {
+        let best = -Infinity;
+        for(let j=0;j<M;j++) if(j !== old && ev.valid_m[j]) best = Math.max(best, ev.logits[a][j]);
+        gap = (oldValid && best > -Infinity) ? best - ev.logits[a][old] : 0;
+      }
+      rows.push({a, old, new: nw, act, gap: Math.round(gap*1e4)/1e4});
+    }
+    prev = now;
+    return rows;
+  });
+}
+
+const ROLL = {};
+function rolled(epIdx, lam){
+  const key = lam.toFixed(3);
+  if(!ROLL[epIdx]) ROLL[epIdx] = {};
+  if(!ROLL[epIdx][key]) ROLL[epIdx][key] = rerollEpisode(epIdx, lam);
+  return ROLL[epIdx][key];
+}
+
+function rowsFor(epIdx, evIdx, vname){
+  const e = DATA.episodes[epIdx].events[evIdx];
+  if(!HAS_LOGITS) return e.vars[vname] || e.vars[FRESH_KEY] || e.vars["per_frame"];
+  if(vname === "per_frame") return e.vars["per_frame"];
+  if(vname === "fresh"){
+    // 与离线评测同值时直接用离线决策：打分完全并列时谁先被选到并不唯一，
+    // 浏览器端枚举与 scipy 匈牙利可能各选一个并列最优解，默认值这里不冒这个险。
+    if(Math.abs(LAM - DATA.margin) < 1e-9) return e.vars[FRESH_KEY];
+    if(LAM === 0) return e.vars["per_frame"];
+    return rolled(epIdx, LAM)[evIdx];
+  }
+  return e.vars[vname] || e.vars["per_frame"];
+}
+
+function shortId(id){ return id.split("_").pop(); }
+function ease(p){ return p<0.5 ? 2*p*p : 1-Math.pow(-2*p+2,2)/2; }
+function clamp(x,a,b){ return Math.max(a,Math.min(b,x)); }
+
+function episode(){ return DATA.episodes[ep]; }
+function evData(){ return episode().events[ev]; }
+function prevEv(){ return ev>0 ? episode().events[ev-1] : null; }
+
+function preloadEpisode(i){
+  return Promise.all(DATA.episodes[i].events.map(e => new Promise(res => {
+    const im = new Image(); im.onload=()=>res(im); im.onerror=()=>res(im); im.src=e.map;
+  }))).then(arr => { imgs[i]=arr; });
+}
+
+function agentPositions(e, p){
+  const cur = e.agents;
+  const prev = prevEv();
+  if(!prev || prev.agents.length!==cur.length) return cur;
+  const q = ease(clamp(p,0,1));
+  return cur.map((c,k)=>[prev.agents[k][0]+(c[0]-prev.agents[k][0])*q, prev.agents[k][1]+(c[1]-prev.agents[k][1])*q]);
+}
+
+function drawGoal(g, j, e, rows, p){
+  const gx=S(g[0]), gy=S(g[1]);
+  const row = rows.find(r=>r.new===j);
+  const col = row ? COLORS[row.a%4] : "#4b5563";
+  const found = !e.valid_m[j];
+  ctx.save();
+  ctx.globalAlpha = found ? 0.28 : 1;
+  ctx.strokeStyle = col; ctx.lineWidth = 3.5;
+  ctx.beginPath(); ctx.arc(gx,gy,10,0,Math.PI*2); ctx.stroke();
+  ctx.fillStyle = col; ctx.globalAlpha = found ? 0.2 : 0.85;
+  ctx.beginPath(); ctx.arc(gx,gy,4,0,Math.PI*2); ctx.fill();
+  if(found){
+    ctx.globalAlpha=0.5; ctx.strokeStyle="#8b949e"; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(gx-7,gy-7); ctx.lineTo(gx+7,gy+7); ctx.moveTo(gx+7,gy-7); ctx.lineTo(gx-7,gy+7); ctx.stroke();
+  }
+  ctx.globalAlpha=1; ctx.fillStyle = found?"#6e7681":"#c9d1d9";
+  ctx.font="600 15px ui-monospace,monospace";
+  ctx.fillText("G"+j, gx+13, gy-11);
+  ctx.restore();
+}
+
+function drawLinks(pos, e, rows){
+  rows.forEach(r=>{
+    if(r.new<0 || r.act==="absent") return;
+    const act = actOf(r);
+    const a=pos[r.a]; const g=e.goals[r.new];
+    const x1=S(a[0]), y1=S(a[1]), x2=S(g[0]), y2=S(g[1]);
+    const col=COLORS[r.a%4];
+    ctx.save();
+    ctx.strokeStyle = act==="harm" ? "#f85149" : act==="corr" ? "#3fb950" : col;
+    ctx.globalAlpha = 0.85;
+    ctx.lineWidth = (act==="keep"||act==="init") ? 4 : 5;
+    if(act==="forced") ctx.setLineDash([8,7]);
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+    const ang=Math.atan2(y2-y1,x2-x1);
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(x2,y2);
+    ctx.lineTo(x2-14*Math.cos(ang-0.4), y2-14*Math.sin(ang-0.4));
+    ctx.lineTo(x2-14*Math.cos(ang+0.4), y2-14*Math.sin(ang+0.4));
+    ctx.closePath(); ctx.fillStyle=ctx.strokeStyle; ctx.fill();
+    ctx.restore();
+  });
+}
+
+function drawAgents(pos, rows){
+  const pts = pos.map((a,k)=>({k, x:S(a[0]), y:S(a[1]), col:COLORS[k%4]}));
+  pts.forEach(p=>{
+    const row=rows.find(r=>r.a===p.k);
+    ctx.save();
+    ctx.shadowColor=p.col; ctx.shadowBlur=12;
+    ctx.fillStyle=p.col; ctx.beginPath(); ctx.arc(p.x,p.y,12,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.strokeStyle="#fff"; ctx.lineWidth=2.5; ctx.stroke();
+    if(row && row.act==="harm"){ ctx.strokeStyle="#f85149"; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(p.x,p.y,20,0,Math.PI*2); ctx.stroke(); }
+    if(row && row.act==="corr"){ ctx.strokeStyle="#3fb950"; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(p.x,p.y,20,0,Math.PI*2); ctx.stroke(); }
+    ctx.restore();
+  });
+  // 标签先从各自固定方向伸出，再做一次互斥，智能体重叠时名字仍可读
+  const tags = pts.map(p=>{
+    const ang=(-135+p.k*90)*Math.PI/180;
+    return {p, x:p.x+Math.cos(ang)*34, y:p.y+Math.sin(ang)*34};
+  });
+  for(let it=0; it<80; it++){
+    let moved=false;
+    for(let i=0;i<tags.length;i++) for(let j=i+1;j<tags.length;j++){
+      let dx=tags[j].x-tags[i].x, dy=tags[j].y-tags[i].y;
+      let d=Math.hypot(dx,dy); if(d<1e-3){ dx=0.01; dy=0.01; d=Math.hypot(dx,dy); }
+      const min=44;
+      if(d<min){
+        const push=(min-d)/2, ux=dx/d, uy=dy/d;
+        tags[i].x-=ux*push; tags[i].y-=uy*push;
+        tags[j].x+=ux*push; tags[j].y+=uy*push;
+        moved=true;
+      }
+    }
+    if(!moved) break;
+  }
+  tags.forEach(t=>{
+    t.x=clamp(t.x,18,CANVAS-18); t.y=clamp(t.y,14,CANVAS-14);
+    const dx=t.x-t.p.x, dy=t.y-t.p.y, d=Math.hypot(dx,dy)||1;
+    ctx.save();
+    ctx.strokeStyle=t.p.col; ctx.globalAlpha=0.55; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(t.p.x+dx/d*14, t.p.y+dy/d*14); ctx.lineTo(t.x-dx/d*13, t.y-dy/d*13); ctx.stroke();
+    ctx.globalAlpha=1;
+    const w=30, h=18;
+    ctx.beginPath(); ctx.roundRect(t.x-w/2, t.y-h/2, w, h, 5);
+    ctx.fillStyle="#0b1219ee"; ctx.fill();
+    ctx.strokeStyle=t.p.col; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle=t.p.col; ctx.font="700 12px ui-monospace,monospace";
+    ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText("A"+t.p.k, t.x, t.y+0.5);
+    ctx.restore();
+  });
+}
+
+function render(now){
+  if(!imgs[ep] || !imgs[ep][ev]){ requestAnimationFrame(render); return; }
+  if(VIEW.ep!==ep) VIEW = computeView(episode());
+  const p = clamp((now-animStart)/animDur, 0, 1);
+  const e = evData(), pe = prevEv();
+  const rows = rowsFor(ep, ev, variant);
+  ctx.clearRect(0,0,CANVAS,CANVAS);
+  ctx.imageSmoothingEnabled = true;
+  const src = [VIEW.x0, VIEW.y0, VIEW.size, VIEW.size];
+  if(pe && p<1){ ctx.globalAlpha=1; ctx.drawImage(imgs[ep][ev-1],...src,0,0,CANVAS,CANVAS); }
+  ctx.globalAlpha = pe ? ease(p) : 1;
+  ctx.drawImage(imgs[ep][ev],...src,0,0,CANVAS,CANVAS);
+  ctx.globalAlpha = 1;
+  e.goals.forEach((g,j)=>drawGoal(g,j,e,rows,p));
+  const pos = agentPositions(e,p);
+  drawLinks(pos, e, rows);
+  drawAgents(pos, rows);
+  requestAnimationFrame(render);
+}
+
+function tickCounts(rows){
+  const c={corr:0,harm:0,keep:0,forced:0,neutral:0,init:0};
+  rows.forEach(r=>{ const a=actOf(r); if(c[a]!==undefined) c[a]++; });
+  return c;
+}
+
+function renderTimeline(){
+  const tl=document.getElementById("cr-tl"); tl.innerHTML="";
+  episode().events.forEach((e,i)=>{
+    const c=tickCounts(rowsFor(ep, i, variant));
+    const total=Math.max(1,c.corr+c.harm+c.keep+c.forced+c.neutral+c.init);
+    const div=document.createElement("div");
+    div.className="cr-tick"+(i===ev?" on":"");
+    div.title=`事件 ${i+1} · ${REASON[e.reason]||e.reason} · 纠正${c.corr} 有害${c.harm} 保持${c.keep+c.neutral} 被迫${c.forced}`;
+    const hMax=36;
+    [["c",c.corr],["h",c.harm],["f",c.forced],["k",c.keep+c.neutral+c.init]].forEach(([cls,n])=>{
+      if(!n) return; const bar=document.createElement("i");
+      bar.className=cls; bar.style.height=Math.max(2, hMax*n/total)+"px"; div.appendChild(bar);
+    });
+    div.onclick=()=>{ ev=i; animStart=performance.now(); animDur=260; renderSide(); renderTimeline(); };
+    tl.appendChild(div);
+  });
+}
+
+function fmtGap(x){ return (x>=0?"+":"")+x.toFixed(3); }
+
+function gapBar(row){
+  const max=0.12;
+  const v=clamp(row.gap/max,0,1);
+  const lam=clamp(LAM/max,0,1);
+  const act=actOf(row);
+  const color = act==="corr"?"#3fb950":act==="harm"?"#f85149":"#58a6ff";
+  let note;
+  if(act==="init"){ note="起点没有旧承诺，直接选"; }
+  else if(act==="keep"){
+    if(row.gap===0) note="无替代目标";
+    else if(row.gap<0) note=`替代目标最高也只有 ${fmtGap(row.gap)}，不换`;
+    else if(row.gap<=LAM) note=`最高替代 ${fmtGap(row.gap)} ≤ λ，挡住`;
+    else note=`最高替代 ${fmtGap(row.gap)} > λ，仍保持`;
+  } else if(act==="forced"){ note="旧目标已被找到"; }
+  else { note = row.gap>LAM ? `切换差 ${fmtGap(row.gap)} > λ` : `切换差 ${fmtGap(row.gap)} ≤ λ，加余量后不换`; }
+  return `<div class="cr-gap"><div class="cr-gapbar"><div class="cr-gapfill" style="width:${(v*100).toFixed(1)}%;background:${color}"></div><div class="cr-lam" style="left:${(lam*100).toFixed(1)}%" title="λ=${LAM}"></div></div><span>${note}</span></div>`;
+}
+
+function renderSide(){
+  if(VIEW.ep!==ep) VIEW = computeView(episode());
+  const e=evData(), rows=rowsFor(ep, ev, variant);
+  document.getElementById("cr-evmeta").innerHTML =
+    `<b>${shortId(episode().id)}</b> · K=${episode().K} M=${episode().M} · 事件 <b>${ev+1}/${episode().events.length}</b> · ${REASON[e.reason]||e.reason}`;
+  document.getElementById("cr-hud").innerHTML =
+    `K=${episode().K} · M=${episode().M} · 视野 ×${(96/VIEW.size).toFixed(1)}<br>事件 ${ev+1}/${episode().events.length} · ${REASON[e.reason]||e.reason}<br>变体 <b>${variant}</b>`;
+  document.getElementById("cr-rows").innerHTML = rows.map(r=>{
+    const at=actOf(r), t=TYPE[at];
+    const oldTxt = r.old<0 ? "—" : "G"+r.old;
+    const newTxt = r.new<0 ? "—" : "G"+r.new;
+    const move = (at==="keep"||at==="init") ? `<span class="new">${newTxt}</span>` : `<span class="old">${oldTxt}</span> → <span class="new">${newTxt}</span>`;
+    return `<div class="cr-row">
+      <div class="cr-dot" style="background:${COLORS[r.a%4]}"></div>
+      <div class="cr-a">A${r.a}</div>
+      <div class="cr-move">${move}</div>
+      <div class="cr-badge ${t.cls}">${t.label}</div>
+    </div>${r.act==="absent"?"":gapBar(r)}`;
+  }).join("");
+  const c=tickCounts(rows);
+  const cmp = VAR_ORDER.map(v=>{
+    const cv=tickCounts(rowsFor(ep, ev, v));
+    const sw=cv.corr+cv.harm+cv.neutral;
+    const col = v===variant ? "#e6edf3" : "#8b949e";
+    return `<span style="color:${col}">${VAR_NAME[v]}: 换${sw} 纠正${cv.corr} 有害${cv.harm}</span>`;
+  }).join(" &nbsp;·&nbsp; ");
+  document.getElementById("cr-tot").innerHTML =
+    `<div>本帧 <b style="color:#3fb950">纠正 ${c.corr}</b> · <b style="color:#f85149">有害 ${c.harm}</b> · 保持 ${c.keep+c.neutral} · 被迫 ${c.forced}${c.init?" · 初始 "+c.init:""}</div>
+     <div style="margin-top:6px">同帧对比 &nbsp; ${cmp}</div>`;
+  renderTabs();
+  renderSummary();
+}
+
+function tabLabel(v){
+  if(v === "fresh") return `新鲜+余量 λ=${LAM.toFixed(3)}`;
+  return VAR_NAME[v];
+}
+
+function renderTabs(){
+  const box=document.getElementById("cr-tabs"); box.innerHTML="";
+  VAR_ORDER.forEach(v=>{
+    const b=document.createElement("div");
+    b.className="cr-tab"+(v===variant?" on":"");
+    b.textContent=tabLabel(v);
+    b.onclick=()=>{ variant=v; renderSide(); renderTimeline(); syncHash(); };
+    box.appendChild(b);
+  });
+  document.getElementById("cr-legend").innerHTML =
+    "这里只画 <b>"+tabLabel(variant)+"</b> 的决策。纠正/有害以真测地 oracle 分配为参照。" +
+    "切换行 gap = 新目标打分 − 旧承诺打分；保持行 gap = 最强替代目标 − 当前目标。λ=" + LAM.toFixed(3) +
+    " 时只有 gap&gt;λ 才允许换。" +
+    "三变体各自独立滚动，同一帧的旧承诺可能不同。" +
+    "图上：连线颜色=<b>绿</b>纠正 <b>红</b>有害 其余保持，虚线=旧目标已被找到；灰环=暂无 agent 负责，<b>×</b>=已找到。" +
+    (variant === "memory@0" ? " 把旧承诺当输入喂回后模型对自己的选择过度自信（gap 被压到 −3 左右），几乎不再换。" : "") +
+    (HAS_LOGITS ? " 拖动 λ 会实时重跑同一套解码，而不是换一份预计算结果。" : "");
+}
+
+function renderChips(){
+  const box=document.getElementById("cr-eps"); box.innerHTML="";
+  DATA.episodes.forEach((e,i)=>{
+    const b=document.createElement("div");
+    b.className="cr-chip"+(i===ep?" on":"");
+    b.textContent=shortId(e.id)+" · "+e.events.length+"事件";
+    b.onclick=()=>{ ep=i; ev=0; animStart=performance.now(); preloadEpisode(ep).then(()=>{ renderSide(); renderTimeline(); syncHash(); }); };
+    box.appendChild(b);
+  });
+}
+
+function step(d){
+  const n=episode().events.length;
+  const ni=ev+d;
+  if(ni>=0 && ni<n){ ev=ni; animStart=performance.now(); animDur=280; renderSide(); renderTimeline(); syncHash(); }
+  else if(ni>=n && ep<DATA.episodes.length-1){ ep++; ev=0; animStart=performance.now(); preloadEpisode(ep).then(()=>{renderChips();renderSide();renderTimeline();syncHash();}); }
+}
+
+function agg(vname, epIdx){
+  const s={corr:0,harm:0,neutral:0,forced:0,init:0};
+  const list = epIdx===null ? DATA.episodes.map((_,i)=>i) : [epIdx];
+  list.forEach(i=>DATA.episodes[i].events.forEach((_,j)=>{
+    const c=tickCounts(rowsFor(i,j,vname));
+    s.corr+=c.corr; s.harm+=c.harm; s.neutral+=c.neutral; s.forced+=c.forced; s.init+=c.init;
+  }));
+  s.free = s.corr+s.harm+s.neutral;
+  return s;
+}
+
+function renderSummary(){
+  const cur = agg(variant, ep);
+  const all = agg(variant, null);
+  const zero = agg("per_frame", null);
+  const zeroEp = agg("per_frame", ep);
+  const n = DATA.episodes.length;
+  const lamTxt = variant === "fresh" ? `λ=${LAM.toFixed(3)}` : (variant === "memory@0" ? "旧承诺喂回（λ 不生效）" : "λ=0");
+  const body =
+    `<span><b>${lamTxt}</b></span>`+
+    `<span>本集 自由换 <b>${cur.free}</b>（纠正 <b style="color:#3fb950">${cur.corr}</b> / 有害 <b style="color:#f85149">${cur.harm}</b> / 中性 ${cur.neutral}）</span>`+
+    `<span class="sep">|</span>`+
+    `<span>${n} 集合计 自由换 <b>${all.free}</b>（纠正 <b style="color:#3fb950">${all.corr}</b> / 有害 <b style="color:#f85149">${all.harm}</b> / 中性 ${all.neutral}）</span>`+
+    (variant === "per_frame" ? "" :
+      `<span class="sep">|</span><span>对照 每帧重解：本集 换 ${zeroEp.free} / 害 ${zeroEp.harm}，${n} 集 换 ${zero.free} / 害 ${zero.harm}</span>`);
+  document.getElementById("cr-sum").innerHTML = body;
+}
+
+function syncHash(){
+  const h = `#ep=${ep+1}&ev=${ev+1}&lam=${LAM.toFixed(3)}&v=${variant}`;
+  try{ history.replaceState(null, "", h); }catch(e){ /* file:// 下可能被拒绝 */ }
+}
+
+function readHash(){
+  try{
+    const p = new URLSearchParams(location.hash.slice(1));
+    const i = parseInt(p.get("ep"), 10), j = parseInt(p.get("ev"), 10);
+    const lam = parseFloat(p.get("lam")), v = p.get("v");
+    if(i >= 1 && i <= DATA.episodes.length) ep = i-1;
+    if(j >= 1 && j <= episode().events.length) ev = j-1;
+    if(isFinite(lam) && lam >= 0) LAM = Math.min(0.12, lam);
+    if(VAR_ORDER.includes(v)) variant = v;
+  }catch(e){ /* 忽略坏链接 */ }
+}
+
+function jumpTo(kind){
+  for(let i=ep;i<DATA.episodes.length;i++){
+    const start = i===ep ? ev+1 : 0;
+    for(let j=start;j<DATA.episodes[i].events.length;j++){
+      const c = tickCounts(rowsFor(i, j, variant));
+      const hit = kind === "harm" ? c.harm > 0 : (c.corr+c.harm+c.neutral) > 0;
+      if(hit){ goto(i, j); return; }
+    }
+  }
+}
+
+function goto(i, j){
+  const wasOther = i !== ep;
+  ep = i; ev = j;
+  animStart = performance.now(); animDur = 280;
+  if(wasOther){
+    preloadEpisode(ep).then(()=>{ renderChips(); renderSide(); renderTimeline(); syncHash(); });
+  } else {
+    renderSide(); renderTimeline(); syncHash();
+  }
+}
+
+document.getElementById("cr-prev").onclick=()=>step(-1);
+document.getElementById("cr-next").onclick=()=>step(1);
+document.getElementById("cr-first").onclick=()=>goto(ep, 0);
+document.getElementById("cr-last").onclick=()=>goto(ep, episode().events.length-1);
+document.getElementById("cr-jump-sw").onclick=()=>jumpTo("switch");
+document.getElementById("cr-jump-harm").onclick=()=>jumpTo("harm");
+document.getElementById("cr-play").onclick=(e)=>{
+  playing=!playing;
+  e.target.textContent=playing?"❚❚ 暂停":"▶ 播放";
+  if(playing){ lastAdvance=performance.now()-1800; animStart=performance.now(); }
+};
+document.getElementById("cr-lam").oninput=(e)=>{
+  LAM = parseFloat(e.target.value);
+  document.getElementById("cr-lamval").textContent = LAM.toFixed(3);
+  variant = "fresh";
+  renderSide(); renderTimeline(); syncHash();
+};
+document.getElementById("cr-copy").onclick=async (e)=>{
+  const el = e.currentTarget;
+  const url = location.href.split("#")[0] + `#ep=${ep+1}&ev=${ev+1}&lam=${LAM.toFixed(3)}&v=${variant}`;
+  try{ await navigator.clipboard.writeText(url); }
+  catch(err){
+    const ta=document.createElement("textarea");
+    ta.value=url; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand("copy"); }catch(e2){}
+    ta.remove();
+  }
+  const old=el.textContent;
+  el.textContent="已复制"; setTimeout(()=>{ el.textContent=old; }, 1200);
+};
+document.getElementById("cr-png").onclick=()=>{
+  const a=document.createElement("a");
+  a.download=`commit_${shortId(episode().id)}_ev${ev+1}.png`;
+  a.href=cvs.toDataURL("image/png");
+  a.click();
+};
+window.addEventListener("keydown",(e)=>{
+  if(e.key==="ArrowLeft"){step(-1);e.preventDefault();}
+  if(e.key==="ArrowRight"){step(1);e.preventDefault();}
+  if(e.key===" "){document.getElementById("cr-play").click();e.preventDefault();}
+  if(e.key==="]"){jumpTo("switch");e.preventDefault();}
+  if(e.key==="\\"){jumpTo("harm");e.preventDefault();}
+});
+
+window.addEventListener("hashchange",()=>{
+  const beforeEp = ep;
+  readHash();
+  document.getElementById("cr-lam").value = LAM;
+  document.getElementById("cr-lamval").textContent = LAM.toFixed(3);
+  const paint = ()=>{ renderChips(); renderSide(); renderTimeline(); };
+  if(ep !== beforeEp) preloadEpisode(ep).then(paint); else paint();
+});
+
+function loop(now){
+  if(playing && now-lastAdvance > 1500/speed){
+    lastAdvance=now; step(1);
+  }
+  requestAnimationFrame(loop);
+}
+
+readHash();
+document.getElementById("cr-lam").value = LAM;
+document.getElementById("cr-lamval").textContent = LAM.toFixed(3);
+document.getElementById("cr-ckpt").textContent = DATA.ckpt.split("/").slice(-3).join("/") + " · λ=" + DATA.margin;
+renderChips();
+preloadEpisode(ep).then(()=>{ renderSide(); renderTimeline(); syncHash(); });
+document.getElementById("cr-foot").textContent = "数据：验证集 4 个 shard 的真实事件序列（教师 rollout）。切换判定与 commit_eval 同口径：旧目标仍有效才算自由切换；被迫重分是旧目标已被找到。";
+requestAnimationFrame(render);
+requestAnimationFrame(loop);
+</script>
+</div>

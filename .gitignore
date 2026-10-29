@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+*.so
+
+# 训练产物与缓存（体积大，可重新生成）
+runs/
+cache/
+out/
+setup/deps/
+*.pt
+*.pth
+*.safetensors
+
+# 本地环境
+.venv/
+.env
+.DS_Store

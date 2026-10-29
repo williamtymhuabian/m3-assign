@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>HM3D-M3 分配策略 · 实时看板</title>
+<link rel="stylesheet" href="/web/board.css">
+</head>
+<body>
+<header>
+  <h1>HM3D-M³ 多智能体目标分配 · 实时看板</h1>
+  <nav><a class="on" href="/">训练总览</a><a href="/replay">回放台</a></nav>
+  <span class="badge live" id="trainBadge">连接中…</span>
+  <span class="badge" id="stepBadge">step -</span>
+  <span class="badge" id="gpuBadge">GPU -</span>
+  <span class="badge" id="ckBadge">ckpt -</span>
+  <span class="badge" id="clock"></span>
+</header>
+<main>
+  <section>
+    <div class="card">
+      <h2>训练指标</h2>
+      <div class="grid2">
+        <div class="metric"><span>epoch / step</span><b id="mStep">-</b></div>
+        <div class="metric"><span>train loss</span><b id="mTrainLoss">-</b></div>
+        <div class="metric"><span>val loss</span><b id="mValLoss">-</b></div>
+        <div class="metric"><span>一致率 (argmax)</span><b id="mAcc">-</b></div>
+        <div class="metric"><span>教师复现率<span class="note">（一对一分配）</span></span><b id="mTeacher">-</b></div>
+        <div class="metric"><span>无冲突子集<span class="note">（天花板 33%）</span></span><b id="mCf">-</b></div>
+        <div class="metric"><span>makespan 比</span><b id="mRatio">-</b></div>
+        <div class="metric"><span>samples/s</span><b id="mSps">-</b></div>
+        <div class="metric"><span>SR<span class="note">（navmesh 几何）</span></span><b id="mSR">评测中</b></div>
+        <div class="metric"><span>MSPL</span><b id="mMspl">-</b></div>
+        <div class="metric"><span>预算内完成率</span><b id="mBudget">-</b></div>
+      </div>
+      <canvas id="spark" height="150"></canvas>
+      <div class="legend">
+        <span><i class="dot" style="background:#22d3ee"></i>val 教师复现率</span>
+        <span><i class="dot" style="background:#f59e0b"></i>val loss</span>
+        <span><i class="dot" style="background:#64748b"></i>train loss</span>
+      </div>
+    </div>
+    <div class="card">
+      <h2>真实几何评测 <span class="note" id="simNote">navmesh 测地 · 等待 sim_eval</span></h2>
+      <table id="simTable"><tr><td class="note">运行 python -m m3assign.sim_eval 后刷新</td></tr></table>
+      <div class="note" id="simGeom">几何核对：等待 verify_navmesh</div>
+    </div>
+    <div class="card">
+      <h2>本帧决策</h2>
+      <table id="decTable"><tr><td class="note">未选择 episode</td></tr></table>
+    </div>
+  </section>
+
+  <section>
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h2 style="margin:0">场景现状 · BEV 96×96</h2>
+        <div class="row">
+          <button id="btnPlay">▶ 播放</button>
+          <select id="speed"><option value="600">慢</option><option value="260" selected>中</option><option value="90">快</option></select>
+          <button id="btnHeat" class="on">热图</button>
+          <button id="btnPred" class="on">模型分配</button>
+          <button id="btnTrail" class="on">轨迹</button>
+        </div>
+      </div>
+      <canvas id="bev" width="576" height="576"></canvas>
+      <div class="row" style="margin-top:8px">
+        <input type="range" id="slider" min="0" max="0" value="0">
+        <span id="frameInfo" class="note">-</span>
+      </div>
+      <div id="frameShots" class="frameShots"></div>
+      <div class="legend">
+        <span><i class="dot" style="background:#7f1d1d"></i>障碍</span>
+        <span><i class="dot" style="background:#155e75"></i>已探索</span>
+        <span><i class="dot" style="background:#22d3ee"></i>agent</span>
+        <span><i class="dot" style="background:#ef4444"></i>目标峰值</span>
+        <span class="note">实线=teacher 分配 · 虚线=模型分配</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>训练轨迹 <span class="note" id="trNote">按 seed 复原每一步采到的地图</span></h2>
+      <div class="row">
+        <select id="trRun"><option value="latest">latest</option></select>
+        <button id="trFollow" class="on">跟随训练</button>
+        <input type="range" id="trSlider" min="1" max="1" value="1" style="flex:1">
+        <span id="trStep" class="note">-</span>
+      </div>
+      <div class="row">
+        <label class="note">batch 内第 <input id="trSlot" type="number" min="0" max="511" value="0" step="1" style="width:64px"></label>
+        <label class="note">目标 <select id="trGoal">
+          <option value="0">g0</option><option value="1">g1</option><option value="2">g2</option>
+          <option value="3">g3</option><option value="4">g4</option></select></label>
+        <span class="note">障碍 / 已探索 + 选中目标热图</span>
+      </div>
+      <div class="trWrap">
+        <canvas id="trBev" width="384" height="384"></canvas>
+        <div class="trSide">
+          <div class="trAgentHead note">本帧各 agent 的目标实拍</div>
+          <div class="trAgents" id="trAgents"></div>
+          <div class="trShot"><img id="trImg" alt="训练集 IIN 目标实拍"><span id="trImgNone">无 IIN 图像</span></div>
+          <div id="trImgCap" class="note">-</div>
+          <div id="trThumbs"></div>
+        </div>
+      </div>
+      <div id="trMeta" class="note">-</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="card">
+      <h2>Episode 选择</h2>
+      <div class="row"><input type="search" id="q" placeholder="搜索 episode / 场景"><button id="reload">刷新</button></div>
+      <div id="epList" class="note">载入中…</div>
+    </div>
+    <div class="card">
+      <h2>指令与目标状态</h2>
+      <div id="goals" class="note">未选择 episode</div>
+    </div>
+  </section>
+</main>
+<div id="toast"></div>
+<script src="/web/app.js"></script>
+</body>
+</html>
