@@ -4,7 +4,7 @@
 
 这个仓库同时包含我们做「承诺感知」的一系列实验代码：Sinkhorn 配对、决策聚焦微调、以及**承诺时机（commitment timing）**——什么时候该坚持原目标、什么时候该换。
 
-▶ **[打开交互回放（单文件 HTML，数据已内嵌）](docs/commit_replay.html)**
+▶ **[在线打开交互回放（GitHub Pages）](https://williamtymhuabian.github.io/m3-assign/commit_replay.html)** · 离线版是仓库里的 [docs/commit_replay.html](docs/commit_replay.html)，下载后双击即可
 
 ## 结果快照（同一批 400 个 val episode，越低越好的是 makespan / regret，越高越好的是 MSPL / agree_oracle）
 
