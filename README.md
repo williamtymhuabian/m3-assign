@@ -6,6 +6,8 @@
 
 ▶ **[在线打开交互回放（GitHub Pages）](https://williamtymhuabian.github.io/m3-assign/commit_replay.html)** · 离线版是仓库里的 [docs/commit_replay.html](docs/commit_replay.html)，下载后双击即可
 
+![承诺回放界面：左侧 BEV 地图与目标连线，右侧逐 agent 决策、gap 与 λ 余量](docs/img/replay_fresh.webp)
+
 ## 结果快照（同一批 400 个 val episode，越低越好的是 makespan / regret，越高越好的是 MSPL / agree_oracle）
 
 | 分配器 | MSPL | makespan | regret | agree_oracle |
@@ -37,6 +39,14 @@
 - 每个事件的决策标成 **纠正 / 有害 / 保持 / 被迫重分**，gap 条上画出本帧 λ 的位置
 - **λ 滑杆**：在浏览器里用同一套解码重新滚动，实时看"有害切换先消失、真纠正还在"
 - 时间轴、同帧三策略对比、`]`/`\` 跳到下一个切换 / 下一个有害、`#ep=&ev=&lam=&v=` 可分享链接、当前帧 PNG 导出
+
+同一帧（`00746` 第 3 个事件）两种承诺时机的差别：
+
+| `per_frame`（λ=0） | `fresh@0.03` |
+|---|---|
+| ![每帧重解：A1 G3→G4 中性、A2 G4→G3 有害](docs/img/replay_per_frame.webp) | ![新鲜+余量：四个 agent 全部保持](docs/img/replay_fresh.webp) |
+
+左边每帧重解会把 A1/A2 的目标互换（判为中性 + 有害），底栏是 5 集合计 39 次自由换 / 5 次有害；右边加 0.03 余量后同一帧全部保持，合计降到 17 次 / 1 次有害。两次截图对的是同一批 logits，只是解码用的余量不同。
 
 重新生成：
 
