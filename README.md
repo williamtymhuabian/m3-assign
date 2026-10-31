@@ -1,5 +1,7 @@
 # m3-assign
 
+[![ci](https://github.com/williamtymhuabian/m3-assign/actions/workflows/ci.yml/badge.svg)](https://github.com/williamtymhuabian/m3-assign/actions/workflows/ci.yml)
+
 多智能体物体导航（HM3D-M3 / OVON 风格）里的**目标—智能体分配**策略：把每帧的 BEV 占据/已探索图、每个目标点的 CLIP 热图、BFS 代价喂给一个小网络，输出 K×M 的配对打分，再用匈牙利做一对一解码。
 
 这个仓库同时包含我们做「承诺感知」的一系列实验代码：Sinkhorn 配对、决策聚焦微调、以及**承诺时机（commitment timing）**——什么时候该坚持原目标、什么时候该换。
