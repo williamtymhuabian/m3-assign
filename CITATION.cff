@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "如果本仓库的代码或分析对你的工作有帮助，请按下面的条目引用。"
+title: "m3-assign: 多智能体目标分配与承诺时机"
+abstract: >-
+  面向 HM3D-M3 多智能体物体导航的目标—智能体分配研究代码：AssignNet 打分网络、
+  Sinkhorn 配对、决策聚焦训练、承诺时机（per-frame / fresh+margin / memory contract），
+  以及静态几何评测、离策略切换归因与逐事件交互回放。
+authors:
+  - family-names: "williamtymhuabian"
+    alias: "williamtymhuabian"
+    website: "https://github.com/williamtymhuabian"
+type: software
+license: MIT
+url: "https://github.com/williamtymhuabian/m3-assign"
+repository-code: "https://github.com/williamtymhuabian/m3-assign"
+keywords:
+  - multi-agent navigation
+  - object navigation
+  - target assignment
+  - commitment
+  - HM3D
+date-released: "2026-10-31"

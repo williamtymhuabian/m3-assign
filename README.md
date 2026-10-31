@@ -8,6 +8,10 @@
 
 ![承诺回放界面：左侧 BEV 地图与目标连线，右侧逐 agent 决策、gap 与 λ 余量](docs/img/replay_fresh.webp)
 
+## 方法概览
+
+![方法概览：多源输入 → AssignNet → 承诺时机解码 → 评测与回放](docs/img/arch.png)
+
 ## 结果快照（同一批 400 个 val episode，越低越好的是 makespan / regret，越高越好的是 MSPL / agree_oracle）
 
 | 分配器 | MSPL | makespan | regret | agree_oracle |
@@ -53,7 +57,12 @@
 ```bash
 python -m m3assign.commit_trace --ckpt runs/<run>/best.pt --episodes 5 --out cache/commit_trace.json
 python -m m3assign.commit_view  --trace cache/commit_trace.json --out docs/commit_replay.html
+
+# 不装数据也能跑：用仓库里的样例 trace（1 条真实 episode，17 个事件）
+python -m m3assign.commit_view --trace examples/commit_trace.sample.json --out /tmp/replay.html
 ```
+
+样例字段说明见 [examples/README.md](examples/README.md)。
 
 ## 仓库结构
 
@@ -113,6 +122,12 @@ python -m m3assign.server --port 8765 --host 0.0.0.0
 - 评测用 episode 自带的测地矩阵把分配折成团队指标，**不重跑仿真**；轨迹回放同样是离策略（每个变体在日志事件上自己维护 contract）。
 - 分配层之外的东西（感知、导航、实机）还没接进来。
 - 打分完全并列时（±1e-4 的对称解），浏览器端枚举与 scipy 匈牙利可能选到不同的并列最优解；λ 等于离线评测值时回放直接用离线决策，避免两边数字对不上。
+- 起点帧上的缺口主要在**解码目标**而不是信息：真测地 + min-makespan + 最优访问顺序可以复现 oracle，而只学“绕路系数”的世界模型目前还不如纯欧氏 min-max（见 [reports/baseline_compare.md](reports/baseline_compare.md)）。
+
+## 引用与许可
+
+- 代码以 MIT 许可发布，见 [LICENSE](LICENSE)。
+- 引用信息见 [CITATION.cff](CITATION.cff)；GitHub 仓库页右上角 “Cite this repository” 会直接给出 BibTeX。
 
 ## 致谢
 

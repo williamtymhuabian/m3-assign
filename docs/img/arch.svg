@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="470" viewBox="0 0 1160 470">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8b949e"/>
+    </marker>
+    <style>
+      text { font-family: "Noto Sans CJK SC", "Source Han Sans SC", "Microsoft YaHei", sans-serif; }
+      .t { fill: #c9d1d9; font-size: 15px; }
+      .s { fill: #8b949e; font-size: 12.5px; }
+      .h { fill: #58a6ff; font-size: 16px; font-weight: 600; }
+      .o { fill: #f0883e; font-size: 16px; font-weight: 600; }
+      .g { fill: #3fb950; font-size: 16px; font-weight: 600; }
+      .box { fill: #161b22; stroke: #30363d; stroke-width: 1.5; rx: 10; }
+      .lane { fill: #0d1117; stroke: #21262d; stroke-width: 1.2; rx: 12; }
+    </style>
+  </defs>
+
+  <rect width="1160" height="470" fill="#0d1117"/>
+
+  <!-- Lane labels -->
+  <text x="24" y="34" class="h">输入（每帧事件）</text>
+  <text x="24" y="134" class="h">AssignNet</text>
+  <text x="24" y="254" class="h">承诺时机解码</text>
+  <text x="24" y="374" class="h">评测与回放</text>
+
+  <!-- Inputs -->
+  <rect class="box" x="24" y="48" width="252" height="58"/>
+  <text x="40" y="72" class="t">BEV 占据 / 已探索</text>
+  <text x="40" y="92" class="s">geo  2×96×96（米制栅格）</text>
+
+  <rect class="box" x="292" y="48" width="252" height="58"/>
+  <text x="308" y="72" class="t">目标 CLIP 热图</text>
+  <text x="308" y="92" class="s">heat  M×96×96 + 置信度</text>
+
+  <rect class="box" x="560" y="48" width="252" height="58"/>
+  <text x="576" y="72" class="t">目标坐标 / 可达代价</text>
+  <text x="576" y="92" class="s">mpos · BFS travel · 欧氏</text>
+
+  <rect class="box" x="828" y="48" width="308" height="58"/>
+  <text x="844" y="72" class="t">承诺状态 contract</text>
+  <text x="844" y="92" class="s">上一帧分配 own / taken / has</text>
+
+  <!-- AssignNet -->
+  <rect class="box" x="24" y="148" width="1112" height="72"/>
+  <text x="44" y="178" class="t">卷积主干（4× 下采样，GroupNorm）→ 采样 agent / goal 特征 → 配对特征 [f_a, f_g, Δ, |Δ|, valid]</text>
+  <text x="44" y="202" class="s">MLP 输出 K×M logits；可选 Sinkhorn 迭代做软配对（couple），训练目标：教师 BC / 决策聚焦 / contract 随机丢弃</text>
+
+  <!-- Decode -->
+  <rect class="box" x="24" y="268" width="352" height="72"/>
+  <text x="40" y="294" class="t">匈牙利 / min-makespan 枚举</text>
+  <text x="40" y="318" class="s">一对一配对，K^M ≤ 1024 直接枚举</text>
+
+  <rect class="box" x="404" y="268" width="352" height="72"/>
+  <text x="420" y="294" class="t">承诺余量 λ</text>
+  <text x="420" y="318" class="s">新目标打分 − 旧目标 &gt; λ 才允许换</text>
+
+  <rect class="box" x="784" y="268" width="352" height="72"/>
+  <text x="800" y="294" class="t">memory 模式（可选）</text>
+  <text x="800" y="318" class="s">把上一帧分配作为 contract 喂回模型</text>
+
+  <!-- Outputs -->
+  <rect class="box" x="24" y="388" width="352" height="62"/>
+  <text x="40" y="414" class="t">切换归因</text>
+  <text x="40" y="436" class="s">纠正 / 有害 / 中性 / 保持 / 被迫</text>
+
+  <rect class="box" x="404" y="388" width="352" height="62"/>
+  <text x="420" y="414" class="t">静态评测 harness</text>
+  <text x="420" y="436" class="s">MSPL · makespan · regret · agree</text>
+
+  <rect class="box" x="784" y="388" width="352" height="62"/>
+  <text x="800" y="414" class="t">逐事件回放（单文件 HTML）</text>
+  <text x="800" y="436" class="s">BEV 缩放 · λ 滑杆重解 · 可分享链接</text>
+
+  <!-- Arrows: inputs -> net -->
+  <line x1="150" y1="106" x2="150" y2="148" stroke="#8b949e" stroke-width="1.6" marker-end="url(#a)"/>
+  <line x1="418" y1="106" x2="418" y2="148" stroke="#8b949e" stroke-width="1.6" marker-end="url(#a)"/>
+  <line x1="686" y1="106" x2="686" y2="148" stroke="#8b949e" stroke-width="1.6" marker-end="url(#a)"/>
+  <line x1="982" y1="106" x2="982" y2="148" stroke="#8b949e" stroke-width="1.6" marker-end="url(#a)"/>
+
+  <!-- net -> decode -->
+  <line x1="200" y1="220" x2="200" y2="268" stroke="#8b949e" stroke-width="1.6" marker-end="url(#a)"/>
+  <line x1="580" y1="220" x2="580" y2="268" stroke="#8b949e" stroke-width="1.6" marker-end="url(#a)"/>
+  <line x1="960" y1="220" x2="960" y2="268" stroke="#8b949e" stroke-width="1.6" marker-end="url(#a)"/>
+
+  <!-- decode -> outputs -->
+  <line x1="200" y1="340" x2="200" y2="388" stroke="#8b949e" stroke-width="1.6" marker-end="url(#a)"/>
+  <line x1="580" y1="340" x2="580" y2="388" stroke="#8b949e" stroke-width="1.6" marker-end="url(#a)"/>
+  <line x1="960" y1="340" x2="960" y2="388" stroke="#8b949e" stroke-width="1.6" marker-end="url(#a)"/>
+
+  <!-- feedback loop -->
+  <path d="M 1150 299 C 1160 299 1160 330 1150 330" fill="none"/>
+  <path d="M 960 330 L 960 340" stroke="#8b949e" stroke-width="1.6"/>
+</svg>
