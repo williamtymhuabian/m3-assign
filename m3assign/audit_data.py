@@ -15,7 +15,6 @@ import argparse
 import gzip
 import json
 import time
-from pathlib import Path
 
 import numpy as np
 from safetensors.numpy import load_file

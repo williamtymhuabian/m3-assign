@@ -75,11 +75,17 @@ m3assign/
   commit_eval.py   离策略承诺时序评测（切换分类、churn、oracle 一致率）
   commit_trace.py  导出逐事件回放轨迹（含 contract-free logits）
   commit_view.py   轨迹 + 模板 -> 单文件 HTML
+  assign.py        margin 解码与切换归因（纯 numpy，不依赖 torch）
+  headroom.py      误差分解：代价来源 × 分配目标 × 路线顺序
+  worldmodel.py    绕路系数 + 可达性预测（终端代价的世界模型）
   server.py        本地看板后端（训练曲线 / episode 轨迹 / 热图）
   web/             看板与回放前端
-setup/             环境搭建与 habitat-sim 诊断脚本
-reports/           实验报告
-docs/              静态回放页（GitHub Pages 可直接开）
+setup/              环境搭建与 habitat-sim 诊断脚本
+tests/              解码语义与样例轨迹的单元测试（不需要数据和 torch）
+examples/           可离线重建回放的样例轨迹
+reports/            实验报告
+docs/               静态回放页（GitHub Pages 可直接开）
+.github/workflows/  CI：ruff + pytest（Python 3.10 / 3.11）
 ```
 
 ## 环境
@@ -115,6 +121,10 @@ python -m m3assign.commit_eval --ckpt runs/latest/best.pt --half 1 --mode fresh
 
 # 看板
 python -m m3assign.server --port 8765 --host 0.0.0.0
+
+# 单元测试 + lint（纯 CPU，不需要 torch / 数据）
+pip install -r requirements-dev.txt
+ruff check . && python -m pytest -q
 ```
 
 ## 已知限制

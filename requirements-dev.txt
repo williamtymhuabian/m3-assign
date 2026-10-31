@@ -1,0 +1,5 @@
+# 只跑单元测试与 lint：不需要 torch、数据集或场景资源
+numpy>=1.24
+scipy>=1.10
+pytest>=7.0
+ruff>=0.5

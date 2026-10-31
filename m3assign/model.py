@@ -86,7 +86,7 @@ class AssignNet(nn.Module):
 
         # 数据里的归一化坐标区间是 [-2, 0]（SCHEMA 写的 [-1,1] 与实测不符），
         # grid_sample 需要 [-1,1]，故 +1 做仿射变换。
-        pose_g, peak_g = pose + 1.0, peak[..., :2] + 1.0
+        pose_g = pose + 1.0
 
         agent_f = self._sample(f, pose_g)  # (B,K,2C)
         agent_geo = self._sample(geo, pose_g)  # (B,K,2)
@@ -181,7 +181,6 @@ def metrics(logits: torch.Tensor, batch: dict) -> dict:
     from scipy.optimize import linear_sum_assignment
 
     y = labels_of(batch)
-    probs = logits.softmax(dim=-1)
     pred = logits.argmax(dim=-1)
     eval_mask = batch["valid_k"] & (y >= 0)
     correct = (pred == y) & eval_mask

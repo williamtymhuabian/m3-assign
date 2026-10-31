@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from .data import M_MAX, SHARD_DIR, Store, geodesic_costs, load_index, shard_ids
+from .data import M_MAX, SHARD_DIR, Store, geodesic_costs, shard_ids
 from .decision import df_loss
 from .mapgeo import goal_map_positions
 from .model import AssignNet, loss_fn, metrics

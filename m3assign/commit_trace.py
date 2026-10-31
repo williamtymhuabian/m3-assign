@@ -19,6 +19,7 @@ import numpy as np
 import torch
 from PIL import Image
 
+from .assign import assign_agents, attribute_switches, decode_margin
 from .data import Store, shard_ids
 from .model import build
 from .train import cpu_tensors, take
@@ -39,36 +40,6 @@ def bev_png(geo: np.ndarray) -> str:
 def to_px(xy: np.ndarray, size: int = 96) -> list[float]:
     """归一化坐标 [-2,0] -> 地图像素坐标（与 grid_sample 的 +1 仿射一致）。"""
     return [round(float((xy[0] + 2.0) / 2.0 * size), 2), round(float((xy[1] + 2.0) / 2.0 * size), 2)]
-
-
-def decode(logits, valid_k, valid_m, M, prev, margin):
-    from scipy.optimize import linear_sum_assignment
-
-    actors = np.flatnonzero(valid_k)
-    goals = np.flatnonzero(valid_m)
-    goals = goals[goals < M]
-    assign = np.full(M, -1, dtype=np.int64)
-    if actors.size == 0 or goals.size == 0:
-        return assign
-    cost = -logits[np.ix_(actors, goals)].astype(np.float64)
-    cost = np.where(np.isfinite(cost), cost, 1e6)
-    if margin > 0:
-        for i, a in enumerate(actors):
-            old = prev[a]
-            if old >= 0 and (goals == old).any():
-                cost[i, goals == old] -= margin
-    r, c = linear_sum_assignment(cost)
-    for i, j in zip(r, c):
-        assign[int(goals[j])] = int(actors[i])
-    return assign
-
-
-def assign_agents(assign):
-    out = np.full(4, -1, dtype=np.int64)
-    for g, a in enumerate(assign):
-        if 0 <= a < out.size and out[a] < 0:
-            out[a] = g
-    return out
 
 
 def main() -> int:
@@ -136,41 +107,14 @@ def main() -> int:
                         [round(float(x), 4) if math.isfinite(float(x)) else -1e6 for x in row[:M]]
                         for row in logits[:K]
                     ]
-                cur = decode(logits, vk, vm, M, prev[name], lam)
+                cur = decode_margin(logits, vk, vm, M, prev[name], lam)
                 now = assign_agents(cur)
-                per_agent = []
-                for a in range(K):
-                    old = int(prev[name][a])
-                    new = int(now[a])
-                    old_valid = 0 <= old < M and bool(vm[old])
-                    if not vk[a]:
-                        per_agent.append({"a": a, "old": old, "new": new, "act": "absent", "gap": 0.0})
-                        continue
-                    if old != new:
-                        if not old_valid:
-                            kind = "forced"
-                            gap = 0.0
-                        else:
-                            kind = "neutral"
-                            if new >= 0:
-                                before = int(oracle[old] == a)
-                                after = int(oracle[new] == a)
-                                if after > before:
-                                    kind = "corr"
-                                elif after < before:
-                                    kind = "harm"
-                            gap = float(logits[a, new] - logits[a, old]) if new >= 0 else 0.0
-                        if kind == "corr":
-                            switches["corr"] += 1
-                        elif kind == "harm":
-                            switches["harm"] += 1
-                    else:
-                        kind = "keep"
-                        # 余量阈值附近的信息：最好的替代目标高多少
-                        alt = [float(logits[a, j]) for j in range(min(M, logits.shape[1]))
-                               if j != old and vm[j]]
-                        gap = max(alt) - float(logits[a, old]) if (alt and old_valid) else 0.0
-                    per_agent.append({"a": a, "old": old, "new": new, "act": kind, "gap": round(gap, 4)})
+                per_agent = attribute_switches(logits, prev[name], now, vk, vm, M, oracle)
+                for row_out in per_agent:
+                    if row_out["act"] == "corr":
+                        switches["corr"] += 1
+                    elif row_out["act"] == "harm":
+                        switches["harm"] += 1
                 var_out[name] = per_agent
                 prev[name] = now
             pose = store.pose[row]
