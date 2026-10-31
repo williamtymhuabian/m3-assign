@@ -11,6 +11,7 @@ SR / MSPL / SPL_sum / makespan，让 AssignNet 与 teacher、几何基线同台�
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import random
 import sys
@@ -205,6 +206,66 @@ def model_hungarian_assign(
     return hungarian_on_costs(-np.asarray(score, dtype=np.float64), valid_k, valid_m, M)
 
 
+def minmax_on_costs(
+    cost: np.ndarray,
+    gg: np.ndarray,
+    valid_k: np.ndarray,
+    valid_m: np.ndarray,
+    M: int,
+    cap: int | None = None,
+) -> list[int]:
+    """min-makespan 枚举解码：MSPL 是 max 指标，min-sum 是错的目标。
+
+    cost 只含第一跳（agent→目标），第二跳用 gg。K^M ≤ 1024，直接枚举。
+    cap 限制单个 agent 的目标数（上限取 max(cap, ceil(目标数/K))，保证可行）。
+    """
+    actors = np.flatnonzero(valid_k)
+    goals = [j for j in range(M) if valid_m[j]]
+    if actors.size == 0 or not goals:
+        return [-1] * M
+    K = len(actors)
+    if cap is not None:
+        cap = max(cap, -(-len(goals) // K))
+    best, best_assign = INF, None
+    for combo in itertools.product(range(K), repeat=len(goals)):
+        if cap is not None and max(combo.count(a) for a in range(K)) > cap:
+            continue
+        groups = [[] for _ in range(K)]
+        for j, a in zip(goals, combo):
+            groups[a].append(j)
+        ms = 0.0
+        for a in range(K):
+            order = nn_order(cost[actors[a]], gg, groups[a]) if groups[a] else []
+            tot, prev, bad = 0.0, None, False
+            for j in order:
+                leg = cost[actors[a], j] if prev is None else gg[prev, j]
+                if not np.isfinite(leg):
+                    bad = True
+                    break
+                tot += leg
+                prev = j
+            if bad:
+                ms = INF
+                break
+            ms = max(ms, tot)
+        if ms < best:
+            best, best_assign = ms, combo
+    out = [-1] * M
+    for j, a in zip(goals, best_assign):
+        out[j] = int(actors[a])
+    return out
+
+
+def space_costs(info: dict) -> tuple[np.ndarray, np.ndarray]:
+    """部署可得几何：任务给定的目标世界坐标 + 起点位姿 → 平面欧氏（sg, gg）。"""
+    ep = info["episode"]
+    starts = np.asarray([a["start_position"] for a in ep["agents"]], dtype=np.float64)
+    goals = np.asarray([g["position"] for g in ep["goals_set"]], dtype=np.float64)
+    sg = np.linalg.norm(starts[:, None, :] - goals[None, :, :], axis=-1)
+    gg = np.linalg.norm(goals[:, None, :] - goals[None, :, :], axis=-1)
+    return sg, gg
+
+
 def nearest_greedy_assign(sg: np.ndarray, K: int) -> list[int]:
     M = sg.shape[1]
     assign = [-1] * M
@@ -311,7 +372,7 @@ def main() -> int:
                 pad[: md.shape[0], : md.shape[1]] = md[:K_MAX, :M_MAX]
                 map_by_ep[eid] = pad
 
-    policies = ("oracle", "balanced", "geometric", "hungarian", "hungarian_bfs", "hungarian_eucl", "hungarian_map", "nearest", "teacher", "assignnet", "assignnet_hung", "random")
+    policies = ("oracle", "balanced", "geometric", "hungarian", "hungarian_bfs", "hungarian_eucl", "hungarian_map", "minmax_eucl", "minmax_bal", "nearest", "teacher", "assignnet", "assignnet_hung", "random")
     per_ep: dict[str, list[dict]] = {p: [] for p in policies}
     cover = []
     # 信息差诊断：travel 是地图 BFS 步数、sg 是测地米数，量纲不同，只能比"排序/决策"是否一致
@@ -320,6 +381,10 @@ def main() -> int:
     for pos, eid in enumerate(sorted(eids)):
         info = infos[eid]
         sg, gg, K, M = info["sg"], info["gg"], info["K"], info["M"]
+        # 部署可得：目标世界坐标（任务给定）+ 里程计位姿 → 平面欧氏；第二跳同样用欧氏
+        sg_e, gg_e = space_costs(info)
+        sg_e = np.where(np.isfinite(sg_e), sg_e, 1e6)
+        gg_e = np.where(np.isfinite(gg_e), gg_e, 1e6)
         routes = {
             "oracle": routes_from_assignment(info, info["oracle"]),
             "balanced": routes_from_assignment(info, balanced_greedy(sg, gg)[1]),
@@ -336,6 +401,22 @@ def main() -> int:
             "hungarian_map": routes_from_assignment(
                 info,
                 fill_leftovers(info, hungarian_on_costs(map_by_ep[eid], vk_by_ep[eid], vm_by_ep[eid], M)),
+            ),
+            "minmax_eucl": routes_from_assignment(
+                info,
+                fill_leftovers(
+                    info,
+                    minmax_on_costs(sg_e, gg_e, vk_by_ep[eid], vm_by_ep[eid], M),
+                ),
+            ),
+            "minmax_bal": routes_from_assignment(
+                info,
+                fill_leftovers(
+                    info,
+                    minmax_on_costs(
+                        sg_e, gg_e, vk_by_ep[eid], vm_by_ep[eid], M, cap=-(-M // K)
+                    ),
+                ),
             ),
             "nearest": routes_from_assignment(info, nearest_greedy_assign(sg, K)),
             "teacher": teacher_routes(store, by_ep[eid], K, M, sg),
@@ -423,7 +504,7 @@ def main() -> int:
                 "within_budget": m["within_budget"],
                 "agree_oracle": round(m["agree_oracle"], 3),
             }
-            for p in ("oracle", "teacher", "assignnet", "hungarian", "hungarian_bfs", "hungarian_eucl", "hungarian_map", "assignnet_hung")
+            for p in ("oracle", "teacher", "assignnet", "hungarian", "hungarian_bfs", "hungarian_eucl", "hungarian_map", "minmax_eucl", "minmax_bal", "assignnet_hung")
             for m in per_ep[p][: args.detail]
         ],
     }
